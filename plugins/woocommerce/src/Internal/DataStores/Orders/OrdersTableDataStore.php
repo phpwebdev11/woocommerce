@@ -2771,8 +2771,19 @@ FROM $order_meta_table
 		 */
 		do_action( 'woocommerce_untrash_order', $order->get_id(), $previous_status );
 
-		$order->set_status( $previous_status );
-		$order->save();
+		// Customer order emails (and other transactional emails) are dispatched via WC_Emails
+		// listeners on the woocommerce_order_status_* actions. Suspend just those listeners
+		// while we restore the order so customers aren't re-notified about an order they
+		// already received emails for. The status transition actions themselves still fire,
+		// so any 3rd-party code hooked into them keeps working.
+		$suspended_email_dispatch = $this->suspend_transactional_email_dispatch();
+
+		try {
+			$order->set_status( $previous_status );
+			$order->save();
+		} finally {
+			$this->restore_transactional_email_dispatch( $suspended_email_dispatch );
+		}
 
 		// Was the status successfully restored? Let's clean up the meta and indicate success...
 		if ( 'wc-' . $order->get_status() === $previous_status ) {
@@ -2794,6 +2805,65 @@ FROM $order_meta_table
 		);
 
 		return false;
+	}
+
+	/**
+	 * Removes WC_Emails transactional dispatch listeners (send_transactional_email and
+	 * queue_transactional_email) from every action they're attached to, and returns a
+	 * snapshot suitable for passing to {@see restore_transactional_email_dispatch()}.
+	 *
+	 * @return list<array{0: string, 1: array{0: string, 1: string}, 2: int, 3: int}>
+	 */
+	private function suspend_transactional_email_dispatch(): array {
+		global $wp_filter;
+
+		$suspended           = array();
+		$dispatch_method_set = array( 'send_transactional_email', 'queue_transactional_email' );
+
+		foreach ( $wp_filter as $action => $hook ) {
+			if ( ! is_string( $action ) ) {
+				continue;
+			}
+			foreach ( $hook->callbacks as $priority => $callbacks ) {
+				foreach ( $callbacks as $cb ) {
+					$function = $cb['function'] ?? null;
+					if ( ! is_array( $function ) || ! isset( $function[0], $function[1] ) ) {
+						continue;
+					}
+					$class  = is_object( $function[0] ) ? get_class( $function[0] ) : $function[0];
+					$method = $function[1];
+					if ( ! is_string( $class ) || ! is_string( $method ) ) {
+						continue;
+					}
+					if ( 'WC_Emails' !== $class || ! in_array( $method, $dispatch_method_set, true ) ) {
+						continue;
+					}
+					$normalized = array( $class, $method );
+					remove_action( $action, $normalized, (int) $priority );
+					$suspended[] = array( $action, $normalized, (int) $priority, (int) $cb['accepted_args'] );
+				}
+			}
+		}
+
+		return $suspended;
+	}
+
+	/**
+	 * Re-attaches transactional email dispatch listeners previously removed by
+	 * {@see suspend_transactional_email_dispatch()}.
+	 *
+	 * @param list<array{0: string, 1: array{0: string, 1: string}, 2: int, 3: int}> $suspended Snapshot of suspended listeners.
+	 *
+	 * @return void
+	 */
+	private function restore_transactional_email_dispatch( array $suspended ): void {
+		foreach ( $suspended as $entry ) {
+			$callback = $entry[1];
+			if ( ! is_callable( $callback ) ) {
+				continue;
+			}
+			add_action( $entry[0], $callback, $entry[2], $entry[3] );
+		}
 	}
 
 
