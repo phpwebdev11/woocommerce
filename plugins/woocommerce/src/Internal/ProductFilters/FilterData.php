@@ -146,6 +146,7 @@ class FilterData {
 			global $wpdb;
 
 			if ( get_option( 'woocommerce_product_lookup_table_is_generating' ) ) {
+				// Optimization note: This serves as a fallback while wc_product_meta_lookup is being populated and is bypassed most of the time.
 				$sql = "
 					SELECT meta_value AS stock_status, COUNT( DISTINCT post_id ) AS status_count
 					FROM {$wpdb->postmeta}
@@ -153,6 +154,7 @@ class FilterData {
 					GROUP BY meta_value
 				";
 			} else {
+				// Optimization note: this is the main performance driver as the database processes fewer rows than when scanning the posts meta table.
 				$sql = "
 					SELECT stock_status, COUNT( DISTINCT product_id ) as status_count
 					FROM {$wpdb->wc_product_meta_lookup}
