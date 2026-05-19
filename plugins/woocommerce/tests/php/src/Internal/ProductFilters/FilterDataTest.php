@@ -83,7 +83,13 @@ class FilterDataTest extends AbstractProductFiltersTest {
 	 * @testdox Test stock counts without filter: via wc_product_meta_lookup table.
 	 */
 	public function test_get_stock_status_counts_with_default_query_using_lookup_table() {
-		$this->test_get_stock_status_counts_with( new \WP_Query( array( 'post_type' => 'product' ) ) );
+		$query = new \WP_Query(
+			array(
+				'post_type'           => 'product',
+				'counts-cache-bypass' => microtime( true ),
+			)
+		);
+		$this->test_get_stock_status_counts_with( $query );
 	}
 
 	/**
@@ -95,7 +101,13 @@ class FilterDataTest extends AbstractProductFiltersTest {
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->wc_product_meta_lookup}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		update_option( 'woocommerce_product_lookup_table_is_generating', '1' );
-		$this->test_get_stock_status_counts_with( new \WP_Query( array( 'post_type' => 'product' ) ) );
+		$query = new \WP_Query(
+			array(
+				'post_type'           => 'product',
+				'counts-cache-bypass' => microtime( true )
+			)
+		);
+		$this->test_get_stock_status_counts_with( $query );
 		delete_option( 'woocommerce_product_lookup_table_is_generating' );
 	}
 
