@@ -83,13 +83,7 @@ class FilterDataTest extends AbstractProductFiltersTest {
 	 * @testdox Test stock counts without filter: via wc_product_meta_lookup table.
 	 */
 	public function test_get_stock_status_counts_with_default_query_using_lookup_table() {
-		$query = new \WP_Query(
-			array(
-				'post_type'           => 'product',
-				'counts-cache-bypass' => microtime( true ),
-			)
-		);
-		$this->test_get_stock_status_counts_with( $query );
+		$this->test_get_stock_status_counts_with( new \WP_Query( array( 'post_type' => 'product' ) ) );
 	}
 
 	/**
@@ -101,13 +95,7 @@ class FilterDataTest extends AbstractProductFiltersTest {
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->wc_product_meta_lookup}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		update_option( 'woocommerce_product_lookup_table_is_generating', '1' );
-		$query = new \WP_Query(
-			array(
-				'post_type'           => 'product',
-				'counts-cache-bypass' => microtime( true )
-			)
-		);
-		$this->test_get_stock_status_counts_with( $query );
+		$this->test_get_stock_status_counts_with( new \WP_Query( array( 'post_type' => 'product' ) ) );
 		delete_option( 'woocommerce_product_lookup_table_is_generating' );
 	}
 
@@ -489,7 +477,8 @@ class FilterDataTest extends AbstractProductFiltersTest {
 	 * @param callable  $filter_callback Callback passed to filter test products.
 	 */
 	private function test_get_stock_status_counts_with( $wp_query, $filter_callback = null ) {
-		$query_vars = array_filter( $wp_query->query_vars );
+		$query_vars                        = array_filter( $wp_query->query_vars );
+		$query_vars['counts-cache-bypass'] = microtime( true );
 
 		$actual_stock_status_counts = $this->sut->get_stock_status_counts( $query_vars, array( 'instock', 'outofstock', 'onbackorder' ) );
 
@@ -522,7 +511,8 @@ class FilterDataTest extends AbstractProductFiltersTest {
 	 * @param callable  $filter_callback Callback passed to filter test products.
 	 */
 	private function test_get_filtered_price_with( $wp_query, $filter_callback = null ) {
-		$query_vars = array_filter( $wp_query->query_vars );
+		$query_vars                        = array_filter( $wp_query->query_vars );
+		$query_vars['counts-cache-bypass'] = microtime( true );
 
 		$prices = array();
 
