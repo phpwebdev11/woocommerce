@@ -33,9 +33,9 @@ class ShopperListTests extends WC_Unit_Test_Case {
 	 * Set up.
 	 */
 	public function setUp(): void {
-		// `saved-for-later` is gated on the `cart_save_for_later` feature
-		// flag; short-circuit the option read so `ShopperList::get_by_slug()`
-		// returns a list without persisting the option.
+		// `saved-for-later` depends on the `cart_save_for_later` feature
+		// flag. Filter the option read so `ShopperList::get_by_slug()`
+		// returns a list without writing the option to the database.
 		add_filter( 'pre_option_woocommerce_cart_save_for_later_enabled', array( $this, 'filter_save_for_later_enabled' ) );
 
 		parent::setUp();

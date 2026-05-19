@@ -10,7 +10,6 @@ use Automattic\WooCommerce\Blocks\BlockTypes\Cart;
 use Automattic\WooCommerce\Blocks\BlockTypes\Checkout;
 use Automattic\WooCommerce\Blocks\BlockTypes\MiniCartContents;
 use Automattic\WooCommerce\Internal\ShopperLists\ShopperListsController;
-use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
 /**
  * BlockTypesController class.

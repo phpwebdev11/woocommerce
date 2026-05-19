@@ -3,30 +3,38 @@ declare( strict_types = 1 );
 
 namespace Automattic\WooCommerce\Internal\ShopperLists;
 
+use Automattic\WooCommerce\Internal\Features\FeaturesController;
 use Automattic\WooCommerce\Internal\RegisterHooksInterface;
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
 /**
- * Orchestrates which shopper-list types are enabled and registers the
- * user-facing surfaces gated on each.
+ * Tracks which shopper-list types are turned on and registers the
+ * user-facing pieces that depend on each.
  *
  * @internal Just for internal use.
  */
 final class ShopperListsController implements RegisterHooksInterface {
 
 	/**
-	 * Known list slugs and the feature flag that gates each.
+	 * Known list slugs and the feature flag that controls each.
 	 */
 	private const SUPPORTED_LISTS = array(
 		'saved-for-later' => 'cart_save_for_later',
 		'wishlist'        => 'product_wishlist',
 	);
 
-	private const WISHLIST_ENDPOINT = 'wishlist';
+	/**
+	 * Wishlist My Account endpoint slug. Wrapped in a method (rather than
+	 * a constant) so a future filter or settings hook can override it
+	 * without touching every call site.
+	 */
+	public function get_wishlist_endpoint(): string {
+		return 'wishlist';
+	}
 
 	/**
-	 * Whether a specific list type is enabled, or whether any type is
-	 * enabled when no slug is passed.
+	 * Whether a given list type is on, or whether any list type is on
+	 * when no slug is passed.
 	 *
 	 * @param string|null $list_slug List slug, or null to ask about any type.
 	 */
@@ -59,18 +67,30 @@ final class ShopperListsController implements RegisterHooksInterface {
 
 	/**
 	 * Register hooks. The flush listener attaches regardless of feature
-	 * state so off→on transitions still flush rewrite rules.
+	 * state so turning the feature on or off flushes rewrite rules.
 	 */
 	public function register(): void {
-		add_action( 'update_option_woocommerce_product_wishlist_enabled', 'flush_rewrite_rules' );
+		add_action( FeaturesController::FEATURE_ENABLED_CHANGED_ACTION, array( $this, 'maybe_flush_rewrite_rules' ), 10, 1 );
 
 		if ( ! $this->is_enabled( 'wishlist' ) ) {
 			return;
 		}
+		$endpoint = $this->get_wishlist_endpoint();
 		add_filter( 'woocommerce_get_query_vars', array( $this, 'add_wishlist_query_var' ) );
 		add_filter( 'woocommerce_account_menu_items', array( $this, 'add_wishlist_menu_item' ) );
-		add_filter( 'woocommerce_endpoint_' . self::WISHLIST_ENDPOINT . '_title', array( $this, 'wishlist_endpoint_title' ) );
-		add_action( 'woocommerce_account_' . self::WISHLIST_ENDPOINT . '_endpoint', array( $this, 'render_wishlist_endpoint' ) );
+		add_filter( 'woocommerce_endpoint_' . $endpoint . '_title', array( $this, 'wishlist_endpoint_title' ) );
+		add_action( 'woocommerce_account_' . $endpoint . '_endpoint', array( $this, 'render_wishlist_endpoint' ) );
+	}
+
+	/**
+	 * Flush rewrite rules when the wishlist feature is turned on or off.
+	 *
+	 * @param string $feature_id The feature that changed.
+	 */
+	public function maybe_flush_rewrite_rules( string $feature_id ): void {
+		if ( 'product_wishlist' === $feature_id ) {
+			flush_rewrite_rules();
+		}
 	}
 
 	/**
@@ -81,7 +101,8 @@ final class ShopperListsController implements RegisterHooksInterface {
 	 * @param array $vars Existing query vars keyed by slug.
 	 */
 	public function add_wishlist_query_var( $vars ): array {
-		$vars[ self::WISHLIST_ENDPOINT ] = self::WISHLIST_ENDPOINT;
+		$endpoint            = $this->get_wishlist_endpoint();
+		$vars[ $endpoint ] = $endpoint;
 		return $vars;
 	}
 
@@ -91,15 +112,16 @@ final class ShopperListsController implements RegisterHooksInterface {
 	 * @param array $items Existing menu items keyed by slug.
 	 */
 	public function add_wishlist_menu_item( $items ): array {
+		$endpoint  = $this->get_wishlist_endpoint();
 		$new_items = array();
 		foreach ( $items as $key => $label ) {
 			if ( 'customer-logout' === $key ) {
-				$new_items[ self::WISHLIST_ENDPOINT ] = __( 'Wishlist', 'woocommerce' );
+				$new_items[ $endpoint ] = __( 'Wishlist', 'woocommerce' );
 			}
 			$new_items[ $key ] = $label;
 		}
-		if ( ! isset( $new_items[ self::WISHLIST_ENDPOINT ] ) ) {
-			$new_items[ self::WISHLIST_ENDPOINT ] = __( 'Wishlist', 'woocommerce' );
+		if ( ! isset( $new_items[ $endpoint ] ) ) {
+			$new_items[ $endpoint ] = __( 'Wishlist', 'woocommerce' );
 		}
 		return $new_items;
 	}

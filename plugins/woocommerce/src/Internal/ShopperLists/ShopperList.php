@@ -81,9 +81,8 @@ class ShopperList {
 			return self::from_array( $stored, $user_id );
 		}
 
-		// In-memory list; persisted lazily on the first save(). Disabled
-		// or unknown slugs fall through to `return false` (Store API
-		// surfaces it as 404).
+		// In-memory list; saved on the first save(). Disabled or unknown
+		// slugs return false (the Store API returns a 404 for them).
 		if ( wc_get_container()->get( ShopperListsController::class )->is_enabled( $slug ) ) {
 			return new self(
 				$user_id,
