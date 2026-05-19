@@ -36,6 +36,10 @@ class ShopperListSchemaTest extends WC_Unit_Test_Case {
 	 * Set up.
 	 */
 	public function setUp(): void {
+		// `saved-for-later` is gated on the `cart_save_for_later` feature
+		// flag; enable it so `ShopperList::get_by_slug()` returns a list.
+		update_option( 'woocommerce_cart_save_for_later_enabled', 'yes' );
+
 		parent::setUp();
 
 		$formatters = new Formatters();
@@ -55,6 +59,7 @@ class ShopperListSchemaTest extends WC_Unit_Test_Case {
 	public function tearDown(): void {
 		wp_delete_user( $this->user_id );
 		$this->sut = null;
+		delete_option( 'woocommerce_cart_save_for_later_enabled' );
 		parent::tearDown();
 	}
 

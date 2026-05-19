@@ -81,11 +81,10 @@ class ShopperList {
 			return self::from_array( $stored, $user_id );
 		}
 
-		// In-memory list for any known list slug; persisted lazily on the
-		// first save(). Feature-gating lives at the Store API route layer,
-		// not here — callers that load a list directly (e.g. tests) get the
-		// fallback regardless of the feature flag.
-		if ( wc_get_container()->get( ShopperListsController::class )->is_supported( $slug ) ) {
+		// In-memory list; persisted lazily on the first save(). Disabled
+		// or unknown slugs fall through to `return false` (Store API
+		// surfaces it as 404).
+		if ( wc_get_container()->get( ShopperListsController::class )->is_enabled( $slug ) ) {
 			return new self(
 				$user_id,
 				$slug,

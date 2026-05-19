@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 namespace Automattic\WooCommerce\StoreApi\Routes\V1;
 
 use Automattic\WooCommerce\Internal\ShopperLists\ShopperList;
-use Automattic\WooCommerce\Internal\ShopperLists\ShopperListsController;
 use Automattic\WooCommerce\StoreApi\Exceptions\RouteException;
 
 /**
@@ -82,11 +81,7 @@ class ShopperListsBySlug extends AbstractRoute {
 	 * @return \WP_REST_Response
 	 */
 	protected function get_route_response( \WP_REST_Request $request ) {
-		$slug = (string) $request['slug'];
-		if ( ! wc_get_container()->get( ShopperListsController::class )->is_enabled( $slug ) ) {
-			throw new RouteException( 'woocommerce_rest_shopper_list_not_found', esc_html__( 'Shopper list not found.', 'woocommerce' ), 404 );
-		}
-		$list = ShopperList::get_by_slug( $slug );
+		$list = ShopperList::get_by_slug( (string) $request['slug'] );
 
 		if ( ! $list ) {
 			throw new RouteException( 'woocommerce_rest_shopper_list_not_found', esc_html__( 'Shopper list not found.', 'woocommerce' ), 404 );
