@@ -145,6 +145,44 @@ class StockNotificationTest extends WC_Unit_Test_Case {
 	}
 
 	/**
+	 * @testdox For a simple product, meta.product_id should equal the product ID.
+	 */
+	public function test_to_payload_meta_product_id_for_simple_product(): void {
+		$product = WC_Helper_Product::create_simple_product(
+			true,
+			array(
+				'manage_stock'   => true,
+				'stock_quantity' => 0,
+			)
+		);
+
+		$notification = new StockNotification( $product->get_id(), StockNotification::EVENT_OUT_OF_STOCK );
+		$payload      = $notification->to_payload();
+
+		$this->assertSame( $product->get_id(), $payload['meta']['product_id'] );
+		$this->assertSame( $product->get_id(), $payload['resource_id'] );
+	}
+
+	/**
+	 * @testdox For a variation, meta.product_id should be the parent product ID so mobile can navigate to the product details screen, while resource_id keeps the variation ID for identification.
+	 */
+	public function test_to_payload_meta_product_id_for_variation(): void {
+		$parent     = WC_Helper_Product::create_variation_product();
+		$variations = $parent->get_children();
+		$variation  = wc_get_product( $variations[0] );
+		$variation->set_manage_stock( true );
+		$variation->set_stock_quantity( 0 );
+		$variation->save();
+
+		$notification = new StockNotification( $variation->get_id(), StockNotification::EVENT_OUT_OF_STOCK );
+		$payload      = $notification->to_payload();
+
+		$this->assertSame( $parent->get_id(), $payload['meta']['product_id'] );
+		$this->assertSame( $variation->get_id(), $payload['resource_id'] );
+		$this->assertNotSame( $variation->get_id(), $payload['meta']['product_id'] );
+	}
+
+	/**
 	 * @testdox Should return null when the product no longer exists.
 	 */
 	public function test_to_payload_returns_null_for_deleted_product(): void {

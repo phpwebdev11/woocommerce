@@ -187,6 +187,12 @@ class StockNotification extends Notification {
 		$product_name = wp_strip_all_tags( $product->get_name() );
 		$site_title   = wp_strip_all_tags( get_bloginfo( 'name' ) );
 
+		// For variations, `meta.product_id` is the parent product ID so the mobile app
+		// can always navigate to the product details screen. `resource_id` keeps the
+		// actual entity ID (variation or simple product) for identification and dedup.
+		$is_variation = $product->is_type( 'variation' );
+		$product_id   = $is_variation ? $product->get_parent_id() : $product->get_id();
+
 		return array(
 			'type'        => $this->get_type(),
 			'icon'        => self::ICON,
@@ -195,7 +201,7 @@ class StockNotification extends Notification {
 			'title'       => $this->build_title( $product_name ),
 			'message'     => $this->build_message( $product_name, $site_title, $product ),
 			'meta'        => array(
-				'product_id' => $this->get_resource_id(),
+				'product_id' => $product_id,
 				'event_type' => $this->event_type,
 			),
 		);
