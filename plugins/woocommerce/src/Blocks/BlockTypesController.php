@@ -9,6 +9,7 @@ use Automattic\WooCommerce\Blocks\Integrations\IntegrationRegistry;
 use Automattic\WooCommerce\Blocks\BlockTypes\Cart;
 use Automattic\WooCommerce\Blocks\BlockTypes\Checkout;
 use Automattic\WooCommerce\Blocks\BlockTypes\MiniCartContents;
+use Automattic\WooCommerce\Internal\ShopperLists\ShopperListsController;
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
 /**
@@ -554,7 +555,7 @@ final class BlockTypesController {
 			MiniCartContents::get_mini_cart_block_types()
 		);
 
-		if ( FeaturesUtil::feature_is_enabled( 'cart_save_for_later' ) ) {
+		if ( wc_get_container()->get( ShopperListsController::class )->is_enabled() ) {
 			$block_types[] = 'ShopperCollection';
 		}
 
