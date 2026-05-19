@@ -75,10 +75,10 @@ class ShopperListTests extends WC_Unit_Test_Case {
 	}
 
 	/**
-	 * @testdox get_by_slug should return false for any list slug other than saved-for-later.
+	 * @testdox get_by_slug should return false for any unknown list slug.
 	 */
 	public function test_load_returns_false_for_unsupported_list_slug(): void {
-		$this->assertFalse( ShopperList::get_by_slug( 'wishlist', $this->user_id ) );
+		$this->assertFalse( ShopperList::get_by_slug( 'unknown-list', $this->user_id ) );
 		$this->assertFalse( ShopperList::get_by_slug( 'INVALID', $this->user_id ) );
 		$this->assertFalse( ShopperList::get_by_slug( '', $this->user_id ) );
 	}

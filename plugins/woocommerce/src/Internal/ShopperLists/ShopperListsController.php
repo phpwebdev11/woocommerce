@@ -44,6 +44,14 @@ final class ShopperListsController implements RegisterHooksInterface {
 	}
 
 	/**
+	 * Whether the slug is a known list type, regardless of feature state.
+	 * Use this to validate a slug shape; use `is_enabled()` to gate behavior.
+	 */
+	public function is_supported( string $list_slug ): bool {
+		return isset( self::SUPPORTED_LISTS[ $list_slug ] );
+	}
+
+	/**
 	 * Slugs of all currently-enabled lists, in declaration order.
 	 *
 	 * @return string[]
